@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>資料庫查詢練習 · CAT CAFE 貓咖啡廳</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=JetBrains+Mono&display=swap">
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#2a211b;--mute:#6b5d52;--acc:#b4540a;--fk:#0f766e;--line:#e2d8cc;--ok:#166534;--okbg:#dcfce7;--bad:#991b1b;--badbg:#fee2e2;--code:#1f1812;--codeink:#f3ebe1}
+@media(prefers-color-scheme:dark){:root{--bg:#17120e;--card:#221b15;--ink:#f3ebe1;--mute:#b3a495;--acc:#fb923c;--fk:#2dd4bf;--line:#3a2f26;--ok:#86efac;--okbg:#14301f;--bad:#fca5a5;--badbg:#3a1717;--code:#100c09}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Noto Sans TC",system-ui,sans-serif}
+header{padding:2.2rem 1rem 1.2rem;max-width:920px;margin:auto}
+h1{font-size:1.8rem;margin:0 0 .3rem}
+header p{color:var(--mute);margin:0}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;display:flex;gap:.25rem;overflow-x:auto;padding:.5rem 1rem;justify-content:center}
+nav a{color:var(--ink);text-decoration:none;padding:.35rem .9rem;border-radius:99px;white-space:nowrap}
+nav a:hover{background:var(--acc);color:#fff}
+main{max-width:920px;margin:auto;padding:0 1rem 4rem}
+section{margin-top:2.5rem}
+h2{border-left:5px solid var(--acc);padding-left:.7rem;font-size:1.4rem}
+h3{margin:1.5rem 0 .4rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1rem 1.2rem;margin:1rem 0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:.3rem .6rem;text-align:left;white-space:nowrap}
+th{background:var(--bg)}
+code,textarea{font-family:"JetBrains Mono",ui-monospace,monospace}
+code{background:var(--bg);padding:.1rem .35rem;border-radius:4px;font-size:.88em}
+textarea{width:100%;min-height:13rem;background:var(--code);color:var(--codeink);border:1px solid var(--line);border-radius:6px;padding:.7rem;font-size:.88rem;line-height:1.5;resize:vertical}
+button{font:inherit;border:1px solid var(--acc);background:var(--card);color:var(--acc);border-radius:6px;padding:.4rem .9rem;margin:.5rem .4rem 0 0;cursor:pointer}
+button.run{background:var(--acc);color:#fff}
+.chips button{border-radius:99px;margin:.2rem .3rem .2rem 0}
+.chips button[aria-pressed=true]{background:var(--acc);color:#fff}
+button:focus-visible,textarea:focus-visible,nav a:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+.msg{padding:.5rem .8rem;border-radius:6px;margin:.6rem 0;font-size:.92rem}
+.ok{background:var(--okbg);color:var(--ok)}.bad{background:var(--badbg);color:var(--bad)}
+.label{font-weight:700;margin:.8rem 0 .2rem}
+.tag{display:inline-block;font-size:.78rem;border:1px solid var(--acc);color:var(--acc);border-radius:99px;padding:0 .6rem;margin-left:.4rem;vertical-align:middle}
+.stat{font-weight:700;color:var(--acc)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.cmp>div{min-width:0}
+@media(max-width:700px){.cmp{grid-template-columns:1fr}}
+pre{background:var(--code);color:var(--codeink);padding:.7rem;border-radius:6px;overflow-x:auto;font-size:.82rem;margin:.3rem 0}
+svg text{font-family:"Noto Sans TC",sans-serif;font-size:12px;fill:var(--ink)}
+svg .b{fill:var(--card);stroke:var(--acc);stroke-width:1.5}
+svg .h{font-weight:700;fill:var(--acc);font-size:13px}
+svg .pk{font-weight:700}
+svg .fk{fill:var(--fk);font-weight:700}
+svg line{stroke:var(--mute);stroke-width:1.5;marker-end:url(#ar)}
+svg #ar path{fill:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+<h1>CAT CAFE 貓咖啡廳 查詢練習</h1>
+<p>製作者：（請填入姓名／學號）｜課程：資料庫（請填入班級）｜資料皆為虛構樣本</p>
+<p class="stat" id="stat" style="margin-top:.5rem">SQLite 載入中…</p>
+</header>
+<nav><a href="#case">案例背景</a><a href="#design">資料庫設計</a><a href="#query">查詢操作</a><a href="#compare">結果比較</a></nav>
+<main>
+
+<section id="case">
+<h2>案例背景</h2>
+<div class="card">
+<p><b>CAT CAFE：貓咖啡廳的會員與點餐管理。</b></p>
+<p><b>使用者：</b>客人與服務員（店長也是服務員的一種職務）。</p>
+<p><b>要解決的問題：</b>貓咖啡廳的客人除了點飲料和甜點，還會挑選想互動的貓咪，也有人是會員。原本會員資料、來店紀錄與點單都記在紙本，服務員不知道客人來過幾次、誰是常客；店長也無法回答「哪隻貓最受歡迎？」「哪類餐點賺最多？」「每位服務員的業績如何？」，也不知道咖啡和蛋糕還剩多少、要不要補貨。這個資料庫把客人、服務員、貓咪、菜單、來店紀錄、點餐明細與進貨紀錄連在一起，讓服務員能快速查詢客人與消費，也讓店長能用 SQL 做營運分析與庫存管理。<b>庫存量不另外儲存，而是「進貨總數 − 點餐總數」即時算出</b>，避免數字不一致。</p>
+</div>
+</section>
+
+<section id="design">
+<h2>資料庫設計</h2>
+<h3>ERD</h3>
+<div class="card scroll">
+<svg viewBox="0 0 700 650" width="700" role="img" aria-label="ERD：visits 參照 customers、staff、cats；order_items 參照 visits 與 menu_items">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="b" x="270" y="10" width="170" height="130" rx="6"/><text class="h" x="280" y="30">cats 貓咪</text><text class="pk" x="280" y="50">PK cat_id</text><text x="280" y="68">cat_name</text><text x="280" y="86">breed</text><text x="280" y="104">age</text><text x="280" y="122">personality</text>
+<rect class="b" x="270" y="170" width="170" height="145" rx="6"/><text class="h" x="280" y="190">visits 來店紀錄</text><text class="pk" x="280" y="210">PK visit_id</text><text class="fk" x="280" y="228">FK customer_id</text><text class="fk" x="280" y="246">FK staff_id</text><text class="fk" x="280" y="264">FK cat_id（可為 NULL）</text><text x="280" y="282">visit_date</text><text x="280" y="300">minutes</text>
+<rect class="b" x="10" y="190" width="150" height="100" rx="6"/><text class="h" x="20" y="210">customers 客人</text><text class="pk" x="20" y="230">PK customer_id</text><text x="20" y="248">name</text><text x="20" y="266">phone</text><text x="20" y="284">member_level</text>
+<rect class="b" x="540" y="190" width="150" height="80" rx="6"/><text class="h" x="550" y="210">staff 服務員</text><text class="pk" x="550" y="230">PK staff_id</text><text x="550" y="248">staff_name</text><text x="550" y="266">role</text>
+<rect class="b" x="270" y="370" width="170" height="105" rx="6"/><text class="h" x="280" y="390">order_items 點餐明細</text><text class="pk" x="280" y="410">PK order_id</text><text class="fk" x="280" y="428">FK visit_id</text><text class="fk" x="280" y="446">FK item_id</text><text x="280" y="464">quantity</text>
+<rect class="b" x="540" y="370" width="150" height="125" rx="6"/><text class="h" x="550" y="390">menu_items 菜單</text><text class="pk" x="550" y="410">PK item_id</text><text x="550" y="428">item_name</text><text x="550" y="446">category</text><text x="550" y="464">price</text><text x="550" y="482">reorder_level</text><rect class="b" x="540" y="540" width="150" height="105" rx="6"/><text class="h" x="550" y="560">restocks 進貨紀錄</text><text class="pk" x="550" y="580">PK restock_id</text><text class="fk" x="550" y="598">FK item_id</text><text x="550" y="616">quantity</text><text x="550" y="634">restock_date</text>
+<line x1="355" y1="170" x2="355" y2="142"/><line x1="270" y1="235" x2="162" y2="235"/><line x1="440" y1="235" x2="538" y2="235"/><line x1="355" y1="370" x2="355" y2="317"/><line x1="440" y1="420" x2="538" y2="420"/><line x1="615" y1="540" x2="615" y2="497"/>
+</svg>
+<p style="margin:.3rem 0 0;color:var(--mute);font-size:.9rem"><b>PK</b> 主鍵；<b style="color:var(--fk)">FK</b> 外來鍵；箭頭由外來鍵指向被參照的表。每次來店（visits）可以指定一隻互動的貓，也可以不指定（cat_id 為 NULL）。</p>
+</div>
+
+<h3>欄位說明</h3>
+<div class="card scroll"><table id="fields"></table></div>
+
+<h3>樣本資料</h3>
+<div id="samples"></div>
+</section>
+
+<section id="query">
+<h2>查詢操作</h2>
+<p>修改 SQL 後按「執行」，可看到實際結果或錯誤訊息，並與預期結果自動比對。</p>
+<div class="chips" id="chips" role="group" aria-label="依主題篩選"></div>
+<div id="qs"></div>
+</section>
+
+<section id="compare">
+<h2>結果比較</h2>
+<p>同一個問題，修改 SQL 後結果如何改變？以下結果都是頁面載入時即時執行的。</p>
+<div id="cmps"></div>
+</section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<script>
+const SCHEMA=`
+CREATE TABLE customers(customer_id INTEGER PRIMARY KEY,name TEXT NOT NULL,phone TEXT,member_level TEXT);
+CREATE TABLE staff(staff_id INTEGER PRIMARY KEY,staff_name TEXT NOT NULL,role TEXT);
+CREATE TABLE cats(cat_id INTEGER PRIMARY KEY,cat_name TEXT NOT NULL,breed TEXT,age INTEGER,personality TEXT);
+CREATE TABLE menu_items(item_id INTEGER PRIMARY KEY,item_name TEXT NOT NULL,category TEXT,price INTEGER,reorder_level INTEGER);
+CREATE TABLE restocks(restock_id INTEGER PRIMARY KEY,item_id INTEGER,quantity INTEGER,restock_date TEXT,FOREIGN KEY(item_id) REFERENCES menu_items(item_id));
+CREATE TABLE visits(visit_id INTEGER PRIMARY KEY,customer_id INTEGER,staff_id INTEGER,cat_id INTEGER,visit_date TEXT,minutes INTEGER,FOREIGN KEY(customer_id) REFERENCES customers(customer_id),FOREIGN KEY(staff_id) REFERENCES staff(staff_id),FOREIGN KEY(cat_id) REFERENCES cats(cat_id));
+CREATE TABLE order_items(order_id INTEGER PRIMARY KEY,visit_id INTEGER,item_id INTEGER,quantity INTEGER,FOREIGN KEY(visit_id) REFERENCES visits(visit_id),FOREIGN KEY(item_id) REFERENCES menu_items(item_id));
+INSERT INTO customers VALUES(1,'林小美','0912-000-001','金卡'),(2,'王大明','0912-000-002','一般'),(3,'陳小花','0912-000-003','銀卡'),(4,'張小凱','0912-000-004','一般'),(5,'李小安','0912-000-005','金卡'),(6,'趙小晴','0912-000-006','一般');
+INSERT INTO staff VALUES(1,'阿傑','店長'),(2,'小雅','服務員'),(3,'小宇','服務員');
+INSERT INTO cats VALUES(1,'米糕','布偶貓',3,'親人'),(2,'黑咪','米克斯',5,'高冷'),(3,'橘子','橘貓',2,'活潑'),(4,'雪球','波斯貓',4,'溫和'),(5,'阿虎','孟加拉貓',1,'好動');
+INSERT INTO menu_items VALUES(1,'美式咖啡','飲品',90,5),(2,'拿鐵','飲品',110,5),(3,'伯爵紅茶','飲品',100,5),(4,'巧克力蛋糕','甜點',130,3),(5,'鬆餅','甜點',150,3),(6,'貓咪餅乾','貓零食',50,5),(7,'貓罐頭','貓零食',80,5),(8,'起司蛋糕','甜點',140,3);
+INSERT INTO restocks VALUES(1,1,10,'2026-10-01'),(2,2,10,'2026-10-01'),(3,3,8,'2026-10-01'),(4,4,6,'2026-10-01'),(5,5,5,'2026-10-01'),(6,6,12,'2026-10-01'),(7,7,6,'2026-10-01'),(8,8,4,'2026-10-01'),(9,1,5,'2026-11-01'),(10,4,4,'2026-11-05');
+INSERT INTO visits VALUES(1,1,2,1,'2026-10-03',90),(2,2,3,2,'2026-10-03',60),(3,3,2,3,'2026-10-10',120),(4,1,3,1,'2026-10-17',60),(5,4,2,NULL,'2026-10-17',45),(6,5,3,4,'2026-10-24',90),(7,1,2,3,'2026-10-3
